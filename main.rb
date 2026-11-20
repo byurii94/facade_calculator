@@ -3,7 +3,7 @@
 require 'json'
 
 module FacadeCalculator
-  VERSION = "1.0.1"
+  VERSION = "1.0.0"
   REMOTE_BASE_URL = "https://raw.githubusercontent.com/byurii94/facade_calculator/main"
 
   def self.parse_float(val)
@@ -23,7 +23,8 @@ module FacadeCalculator
   end
 
   def self.check_for_updates(silent: true)
-    req = Sketchup::Http::Request.new("#{REMOTE_BASE_URL}/version.json", Sketchup::Http::GET)
+    cache_bust = "t=#{Time.now.to_i}"
+    req = Sketchup::Http::Request.new("#{REMOTE_BASE_URL}/version.json?#{cache_bust}", Sketchup::Http::GET)
     req.start do |_request, response|
       if response && response.status_code == 200
         begin
@@ -38,14 +39,15 @@ module FacadeCalculator
           UI.messagebox("Помилка перевірки оновлень: #{e.message}") unless silent
         end
       elsif !silent
-        UI.messagebox("Не вдалося з'єднатися із сервером оновлень.")
+        UI.messagebox("Не вдалося з'єднатися із сервером оновлень (код: #{response&.status_code}).")
       end
     end
   end
 
   def self.download_and_install_update(new_version)
     plugin_dir = File.dirname(__FILE__)
-    file_req = Sketchup::Http::Request.new("#{REMOTE_BASE_URL}/main.rb", Sketchup::Http::GET)
+    cache_bust = "t=#{Time.now.to_i}"
+    file_req = Sketchup::Http::Request.new("#{REMOTE_BASE_URL}/main.rb?#{cache_bust}", Sketchup::Http::GET)
     file_req.start do |_r, resp|
       if resp && resp.status_code == 200 && !resp.body.to_s.empty?
         File.binwrite(File.join(plugin_dir, "main.rb"), resp.body)
@@ -54,7 +56,7 @@ module FacadeCalculator
           "Перезапустіть SketchUp, щоб зміни набули чинності."
         )
       else
-        UI.messagebox("Не вдалося завантажити файл main.rb.")
+        UI.messagebox("Не вдалося завантажити файл main.rb (код: #{resp&.status_code}).")
       end
     end
   end
@@ -439,15 +441,15 @@ module FacadeCalculator
     end
 
     prompts = [
-      "Товщина фасаду (мм):", 
-      "Кількість фасадів (шт.):", 
+      "Товщина фасаду (мм):",
+      "Кількість фасадів (шт.):",
       "Зазор між фасадами (мм):",
       "Зазор зліва / спереду (мм):",
       "Зазор справа / ззаду (мм):",
       "Зазор зверху (мм):",
       "Зазор знизу (мм):"
     ]
-    
+
     defaults = ["18", "3", "3", "2", "2", "2", "2"]
 
     input = UI.inputbox(prompts, defaults, "Параметри фасадів")
@@ -476,7 +478,7 @@ end
 unless file_loaded?(__FILE__)
   UI.menu("Extensions").add_item("Калькулятор фасадів (3D)") { FacadeCalculator.calculate }
   UI.menu("Extensions").add_item("Калькулятор фасадів: Перевірити оновлення") { FacadeCalculator.check_for_updates(silent: false) }
-  
+
   path = File.dirname(__FILE__)
   icon_16 = File.join(path, "images", "icon_16.png")
   icon_24 = File.join(path, "images", "icon_24.png")
