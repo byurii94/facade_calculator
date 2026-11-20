@@ -3,7 +3,7 @@
 require 'json'
 
 module FacadeCalculator
-  VERSION = "1.0.1"
+  VERSION = "1.0.0"
   REMOTE_BASE_URL = "https://raw.githubusercontent.com/byurii94/facade_calculator/main"
 
   def self.parse_float(val)
